@@ -6,6 +6,7 @@ and therefore all of the commands.
 from typing import TYPE_CHECKING
 from .debug import DebugCog
 from .player import PlayerCog
+from .bumps import BumpCog
 if TYPE_CHECKING:
     from utils.blanco import BlancoBot
 
@@ -17,3 +18,4 @@ def setup(bot: 'BlancoBot'):
     # Add cogs
     bot.add_cog(DebugCog(bot))
     bot.add_cog(PlayerCog(bot))
+    bot.add_cog(BumpCog(bot))

@@ -547,6 +547,13 @@ class Jockey(Player['BlancoBot']):
         # to prevent the user from spamming them.
         await self._edit_np_controls(show_controls=False)
 
+        try:
+            played = await self.play_bump()
+            if played:
+                return
+        except JockeyException as err:
+            self._logger.error("Error attempting to play bump, skipping: %s", err)
+
         # If index is specified, use that instead
         if index != -1:
             try:
@@ -632,3 +639,47 @@ class Jockey(Player['BlancoBot']):
                     self.guild.name,
                     exc
                 )
+
+    async def play_bump(self) -> bool:
+        """
+        Check and attempt to play a bump if it's been long enough.
+        :return: A boolean denoting whether a bump was played or not.
+        """
+
+        enabled = self._db.get_bumps_enabled(self.guild.id)
+        if not enabled:
+            self._logger.debug("Bumps are not enabled in this guild, returning...")
+            return False
+
+        interval = self._db.get_bump_interval(self.guild.id) * 60
+        last_bump = self._db.get_last_bump(self.guild.id)
+
+        if last_bump == 0:
+            self._logger.debug('Last bump is zero, initializing and skipping...')
+            self._db.set_last_bump(self.guild.id)
+            return False
+
+        if int(time()) - last_bump < interval:
+            self._logger.debug('Hasn\'t been long enough to play a bump.')
+            return False
+
+        bump = self._db.get_random_bump(self.guild.id)
+        if bump is None:
+            self._logger.debug('Guild has no bumps.')
+            return False
+
+        requester = self._bot.user.id if self._bot.user is not None else self.guild.me.id
+
+        try:
+            tracks = await parse_query(self.node, self._bot.spotify, bump.url, requester)
+        except (JockeyException, SpotifyNoResultsError) as err:
+            self._logger.error('Error parsing bump tracks: %s', err)
+            return False
+
+        if len(tracks) == 0:
+            self._logger.error('Unable to parse bump URL into track.')
+            return False
+
+        await self._play(tracks[0])
+        self._db.set_last_bump(self.guild.id)
+        return True

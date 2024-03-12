@@ -3,7 +3,6 @@ PlayerCog: Cog for controlling the music player.
 """
 
 from asyncio import TimeoutError as AsyncioTimeoutError
-from itertools import islice
 from typing import TYPE_CHECKING, Any, Generator, List, Optional
 
 from mafic import PlayerNotConnected
@@ -20,7 +19,7 @@ from utils.embeds import create_error_embed, create_success_embed
 from utils.exceptions import (EmptyQueueError, EndOfQueueError, JockeyError,
                               JockeyException, SpotifyNoResultsError)
 from utils.logger import create_logger
-from utils.paginator import Paginator
+from utils.paginator import Paginator, list_chunks
 from utils.player_checks import check_mutual_voice
 from views.spotify_dropdown import SpotifyDropdownView
 
@@ -29,14 +28,6 @@ from .jockey import Jockey
 if TYPE_CHECKING:
     from dataclass.queue_item import QueueItem
     from utils.blanco import BlancoBot
-
-
-def list_chunks(data: List[Any]) -> Generator[List[Any], Any, Any]:
-    """
-    Yield 10-element chunks of a list. Used for pagination.
-    """
-    for i in range(0, len(data), 10):
-        yield list(islice(data, i, i + 10))
 
 
 class PlayerCog(Cog):
